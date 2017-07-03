@@ -3,44 +3,7 @@
     Henry YP Ho (henryyp.ho@gmail.com)
 """
 import random
-from time import time
 
-# --------------------------------------------- #
-# RECURSIVE GAME TREE WITH GIVEN DEPTH
-# --------------------------------------------- #
-def recursiveGameTree(game, depth=3):
-    legal_moves = game.get_legal_moves()
-    if depth > 0 and len(legal_moves) > 0:
-        depth -= 1
-        return dict((i, recursiveGameTree(game.forecast_move(i), depth)) for i in legal_moves)
-    else:
-        return len(legal_moves)
-
-# --------------------------------------------- #
-# CALCULATE MINIMAX FOR EACH LEVEL
-# --------------------------------------------- #
-def calMM(tree, curLevel=0):
-    if isinstance(tree, list):
-        return [calMM(v, curLevel) for v in tree]
-    elif isinstance(tree, dict):
-        # Append level
-        curLevel += 1
-        # Odd / Even represents Max or Min
-        func = min if curLevel%2 > 0 else max
-        """
-            Suggested in the Slack forum, using generator expression
-            RATHER than list comprehension to conserve memory use, e.g.
-
-            To work out min() of some value:
-                tList = [self.calMM(v, curLevel) for k, v in tree.items()]
-                return min(tList)
-            We can simply do, which create the list in memory and apply the function:
-                min(self.calMM(v, curLevel) for k, v in tree.items())
-        """
-        return func(calMM(v, curLevel) for k, v in tree.items())
-
-    elif isinstance(tree, int):
-        return tree + curLevel
 
 # --------------------------------------------- #
 # SEARCH TIMEOUT CLASS
@@ -167,23 +130,98 @@ class IsolationPlayer:
         self.TIMER_THRESHOLD = timeout
 
 # --------------------------------------------- #
-# MINIMAX PLAYER
+# MINIMAX CLASS
 # --------------------------------------------- #
 class MinimaxPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using depth-limited minimax
     search. You must finish and test this player to make sure it properly uses
     minimax to return a good move before the search time limit expires.
     """
+    # DO NOT modify get_move!!!
+    def get_move(self, game, time_left):
+        self.time_left = time_left
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            return self.minimax(game, self.search_depth)
+        except SearchTimeout:
+            pass  # Handle any actions required after timeout as needed
+        # Return the best move from the last completed search iteration
+        return best_move
+
+    # RESURSIVE GAME TREE WITH DEPTH
+    def recursiveGameTree(self, game, depth=3):
+        legal_moves = game.get_legal_moves()
+        if depth > 0 and len(legal_moves) > 0:
+            depth -= 1
+            return dict([(i, self.recursiveGameTree(game.forecast_move(i), depth)) for i in legal_moves])
+        else:
+            return len(legal_moves)
+
+    def calMM(self, tree, curLevel=0):
+        if isinstance(tree, list):
+            return [self.calMM(v, curLevel) for v in tree]
+        elif isinstance(tree, dict):
+            curLevel += 1
+            func = min if curLevel%2 > 0 else max
+            tmp = []
+
+            for k, v in tree.items():
+                tmp.append(self.calMM(v, curLevel))
+            return func(tmp)
+
+        elif isinstance(tree, int):
+            return tree + curLevel
+
+    # minimax method
+    def minimax(self, game, depth):
+        cur_move = game.get_player_location(game.active_player)
+        legal_moves = game.get_legal_moves()
+
+        tree = self.recursiveGameTree(game, 5)
+
+        if (isinstance(tree, dict)):
+            calTree = self.calMM(tree.values(), 0)
+            treeKey = tree.keys()
+
+            # groupedTree = dict(zip( tree.keys(), self.calMM(tree.values(), 0) ))
+            # print('legal moves: ', groupedTree, treeKey[calTree.index(max(calTree))] )
+
+            return treeKey[calTree.index(max(calTree))]
+        else:
+            return legal_moves[len(legal_moves) - 1] if len(legal_moves) > 0 else (-1,-1)
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # TODO: finish this function!
+        raise NotImplementedError
+
+
+# --------------------------------------------- #
+# ALPHABETA CLASS
+# --------------------------------------------- #
+class AlphaBetaPlayer(IsolationPlayer):
+    """Game-playing agent that chooses a move using iterative deepening minimax
+    search with alpha-beta pruning. You must finish and test this player to
+    make sure it returns a good move before the search time limit expires.
+    """
+
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
         result before the time limit expires.
 
-        **************  YOU DO NOT NEED TO MODIFY THIS FUNCTION  *************
+        Modify the get_move() method from the MinimaxPlayer class to implement
+        iterative deepening search instead of fixed-depth search.
 
-        For fixed-depth search, this function simply wraps the call to the
-        minimax method, but this method provides a common interface for all
-        Isolation agents, and you will replace it in the AlphaBetaPlayer with
-        iterative deepening search.
+        **********************************************************************
+        NOTE: If time_left() < 0 when this function returns, the agent will
+              forfeit the game due to timeout. You must return _before_ the
+              timer reaches 0.
+        **********************************************************************
 
         Parameters
         ----------
@@ -204,100 +242,62 @@ class MinimaxPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # Initialize the best move so that this function returns something
-        # in case the search fails due to timeout
-        best_move = (-1, -1)
-
-        try:
-            # The try/except block will automatically catch the exception
-            # raised when the timer is about to expire.
-            return self.minimax(game, self.search_depth)
-
-        except SearchTimeout:
-            pass  # Handle any actions required after timeout as needed
-
-        # Return the best move from the last completed search iteration
-        return best_move
-
-    # minimax method
-    def minimax(self, game, depth):
-        return (-1, -1)
-        # # get legal moves
-        # legal_moves = game.get_legal_moves()
-        # # build game tree
-        # tree = recursiveGameTree(game, depth)
-        #
-        # if self.time_left() < self.TIMER_THRESHOLD:
-        #     raise SearchTimeout()
-        # elif (isinstance(tree, dict)):
-        #     calTree = calMM(list(tree.values()), depth)
-        #     treeKey = list(tree.keys())
-        #     return treeKey[calTree.index(max(calTree))]
-        # else:
-        #     # if no tree return final legal moves or abandon game
-        #     return legal_moves[len(legal_moves) - 1] if len(legal_moves) > 0 else (-1,-1)
-
-# --------------------------------------------- #
-# Data Gathering MINIMAX PLAYER
-# --------------------------------------------- #
-class DGMiniMaxPlayer(IsolationPlayer):
-
-    # get move, implement iterative deepening
-    def get_move(self, game, time_left):
-        self.time_left = time_left
-        best_move = (-1, -1)
-        depth = 1
-        self.moveCount = 0
-        startTime = time()
-        moveDepth = [8,8,9,11,11,11,15,20,15,20,20,20,30,30,30,30,30,30,30,30,30,30,30,30]
-        while time_left() > 100 and depth < moveDepth[self.moveCount]:
-            best_move = self.dgminimax(game, depth)
-            print('minimax time left:', time_left(), time() - startTime, self.moveCount, depth)
-            depth += 1
-        else:
-            self.moveCount += 1
-            return best_move
-
-    # minimax method
-    def dgminimax(self, game, depth):
-        # get legal moves
+        # TEMP
         legal_moves = game.get_legal_moves()
-        # build game tree
-        tree = recursiveGameTree(game, depth)
+        return legal_moves[len(legal_moves) - 1] if len(legal_moves) > 0 else [-1,-1]
 
 
-        if (isinstance(tree, dict)):
-            calTree = calMM(list(tree.values()), depth)
-            treeKey = list(tree.keys())
-            return treeKey[calTree.index(max(calTree))]
-        else:
-            # if no tree return final legal moves or abandon game
-            return (-1,-1)
+        # TODO: finish this function!
+        raise NotImplementedError
 
-
-# --------------------------------------------- #
-# ALPHABETA CLASS
-# --------------------------------------------- #
-class AlphaBetaPlayer(IsolationPlayer):
-
-    # get move, implement iterative deepening
-    def get_move(self, game, time_left):
-        self.time_left = time_left
-        best_move = (-1, -1)
-        depth = 10
-        legal_moves = game.get_legal_moves()
-        tree = self.partialGameTree(game, depth)
-        alpha = float("-inf")
-        beta = float("inf")
-        while time_left() > 100:
-            best_move = self.alphabeta(game, depth, alpha, beta)
-
-        else:
-            # print('depth: ', depth, 'best_move: ', best_move)
-            return best_move
-
-
-    # alpah beta pruning
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+        """Implement depth-limited minimax search with alpha-beta pruning as
+        described in the lectures.
 
-        return (-1, -1)
+        This should be a modified version of ALPHA-BETA-SEARCH in the AIMA text
+        https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md
+
+        **********************************************************************
+            You MAY add additional methods to this class, or define helper
+                 functions to implement the required functionality.
+        **********************************************************************
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        alpha : float
+            Alpha limits the lower bound of search on minimizing layers
+
+        beta : float
+            Beta limits the upper bound of search on maximizing layers
+
+        Returns
+        -------
+        (int, int)
+            The board coordinates of the best move found in the current search;
+            (-1, -1) if there are no legal moves
+
+        Notes
+        -----
+            (1) You MUST use the `self.score()` method for board evaluation
+                to pass the project tests; you cannot call any other evaluation
+                function directly.
+
+            (2) If you use any helper functions (e.g., as shown in the AIMA
+                pseudocode) then you must copy the timer check into the top of
+                each helper function or else your agent will timeout during
+                testing.
+        """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # TODO: finish this function!
+        raise NotImplementedError
