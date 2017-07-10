@@ -7,7 +7,7 @@ own agent and example heuristic functions.
 """
 
 from random import randint
-from game_agent import (MinimaxPlayer, DGMiniMaxPlayer, AlphaBetaPlayer,
+from game_agent import (MinimaxPlayer, FullMinimaxPlayer, AlphaBetaPlayer,
                         custom_score, custom_score_2, custom_score_3)
 from board_analytics import Aggregator
 import json
@@ -116,9 +116,9 @@ if __name__ == "__main__":
     player1 = RandomPlayer()
     player2 = GreedyPlayer()
     playerMM = MinimaxPlayer()
-    playerDMM = DGMiniMaxPlayer()
+    playerFMM = FullMinimaxPlayer()
     playerAB = AlphaBetaPlayer()
-    game = Board(player2, playerDMM)
+    game = Board(player2, playerMM)
 
     # place player 1 on the board at row 2, column 3, then place player 2 on
     # the board at row 0, column 5; display the resulting board state.  Note
@@ -143,8 +143,8 @@ if __name__ == "__main__":
 
     # play the remainder of the game automatically -- outcome can be "illegal
     # move", "timeout", or "forfeit"
-    # winner, history, outcome = game.play(time_limit=float("inf"))
-    winner, history, outcome = game.play()
+    winner, history, outcome = game.play(time_limit=float("inf"))
+    # winner, history, outcome = game.play()
     print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
     print(game.to_string())
     print("Move history:\n{!s}".format(history))

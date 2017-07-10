@@ -2,6 +2,44 @@
     Udacity - AI Coursework
     Henry YP Ho (henryyp.ho@gmail.com)
 """
+import random
+
+# --------------------------------------------- #
+# RECURSIVE GAME TREE WITH GIVEN DEPTH
+# --------------------------------------------- #
+def recursiveGameTree(game, depth=3):
+    legal_moves = game.get_legal_moves()
+    if depth > 0 and len(legal_moves) > 0:
+        depth -= 1
+        return dict((i, recursiveGameTree(game.forecast_move(i), depth)) for i in legal_moves)
+    else:
+        return len(legal_moves)
+
+# --------------------------------------------- #
+# CALCULATE MINIMAX FOR EACH LEVEL
+# --------------------------------------------- #
+def calMM(tree, curLevel=0):
+    if isinstance(tree, list):
+        return [calMM(v, curLevel) for v in tree]
+    elif isinstance(tree, dict):
+        # Append level
+        curLevel += 1
+        # Odd / Even represents Max or Min
+        func = min if curLevel%2 > 0 else max
+        """
+            Suggested in the Slack forum, using generator expression
+            RATHER than list comprehension to conserve memory use, e.g.
+
+            To work out min() of some value:
+                tList = [self.calMM(v, curLevel) for k, v in tree.items()]
+                return min(tList)
+            We can simply do, which create the list in memory and apply the function:
+                min(self.calMM(v, curLevel) for k, v in tree.items())
+        """
+        return func(calMM(v, curLevel) for k, v in tree.items())
+
+    elif isinstance(tree, int):
+        return tree + curLevel
 
 # --------------------------------------------- #
 # SEARCH TIMEOUT CLASS
@@ -180,87 +218,148 @@ class MinimaxPlayer(IsolationPlayer):
         # Return the best move from the last completed search iteration
         return best_move
 
-    def getClassName(self):
-        return __class__.__name__
-
     # minimax method
     def minimax(self, game, depth):
+        # get legal moves
         legal_moves = game.get_legal_moves()
-        curDepth = self.search_depth - depth
+        # build game tree
+        tree = recursiveGameTree(game, depth)
 
-        if self.search_depth is depth:
-            li = []
-            depth -= 1
-            for i in legal_moves:
-                tDepth, tVal = self.minimax(game.forecast_move(i), depth)
-                li.append(tDepth + tVal)
-            if len(li) <= 0:
-                return (-1, -1)
-            num = max(li)
-            ind = li.index(num)
-            return legal_moves[ind]
-        elif depth <= 0:
-            return curDepth, len(legal_moves)
-        elif not isinstance(legal_moves, list) or len(legal_moves) <= 0:
-            return curDepth, 0
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        elif (isinstance(tree, dict)):
+            calTree = calMM(list(tree.values()), depth)
+            treeKey = list(tree.keys())
+            return treeKey[calTree.index(max(calTree))]
         else:
-            func = max if depth%2 > 0 else min
+            # if no tree return final legal moves or abandon game
+            return legal_moves[len(legal_moves) - 1] if len(legal_moves) > 0 else (-1,-1)
+
+# --------------------------------------------- #
+# Data Gathering MINIMAX PLAYER
+# --------------------------------------------- #
+class DGMiniMaxPlayer(IsolationPlayer):
+
+    # get move, implement iterative deepening
+    def get_move(self, game, time_left):
+        self.time_left = time_left
+        best_move = (-1, -1)
+        depth = 1
+        self.moveCount = 0
+        startTime = time()
+        moveDepth = [8,8,9,11,11,11,15,20,15,20,20,20,30,30,30,30,30,30,30,30,30,30,30,30]
+        while time_left() > 100 and depth < moveDepth[self.moveCount]:
+            best_move = self.dgminimax(game, depth)
+            print('minimax time left:', time_left(), time() - startTime, self.moveCount, depth)
+            depth += 1
+        else:
+            self.moveCount += 1
+            return best_move
+
+    # minimax method
+    def dgminimax(self, game, depth):
+        # get legal moves
+        legal_moves = game.get_legal_moves()
+        # build game tree
+        tree = recursiveGameTree(game, depth)
+
+
+        if (isinstance(tree, dict)):
+            calTree = calMM(list(tree.values()), depth)
+            treeKey = list(tree.keys())
+            return treeKey[calTree.index(max(calTree))]
+        else:
+            # if no tree return final legal moves or abandon game
+            return (-1,-1)
+
+# --------------------------------------------- #
+# FULL MINIMAX CLASS
+# --------------------------------------------- #
+class FullMinimaxPlayer(IsolationPlayer):
+    # get move, implement iterative deepening
+    def get_move(self, game, time_left):
+        self.time_left = time_left
+        self.org_depth = 5
+        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
+
+        li = []
+        for i in legal_moves:
+            tDepth, tVal, tA, tB = self.fullMinimax(game.forecast_move(i), self.org_depth)
+            li.append(tDepth + tVal)
+        if len(li) <= 0:
+            return (-1, -1)
+        num = max(li)
+        ind = li.index(num)
+        return legal_moves[ind]
+
+    # full minimax
+    def fullMinimax(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+        legal_moves = game.get_legal_moves()
+        curDepth = self.org_depth - depth
+
+        if depth <= 0:
+            return curDepth, len(legal_moves), alpha, beta
+        elif not isinstance(legal_moves, list) or len(legal_moves) <= 0:
+            return curDepth, 0, alpha, beta
+        else:
+            func = min if depth%2 > 0 else max
             depth -= 1
             tot = []
             for i in legal_moves:
-                iDepth, iVal = self.minimax(game.forecast_move(i), depth)
+                iDepth, iVal, iA, iB = self.fullMinimax(game.forecast_move(i), depth)
                 tot.append( iDepth + iVal )
-            return curDepth, func(tot)
+            return curDepth, func(tot), alpha, beta
 
 # --------------------------------------------- #
 # ALPHABETA CLASS
 # --------------------------------------------- #
 class AlphaBetaPlayer(IsolationPlayer):
 
-    def getClassName(self):
-        return __class__.__name__
-
     # get move, implement iterative deepening
     def get_move(self, game, time_left):
         self.time_left = time_left
-        try:
-            return self.alphabeta(game, self.search_depth)
-        except SearchTimeout:
-            pass  # Handle any actions required after timeout as needed
+        self.org_depth = 7
+        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
 
-    # set and find alpha
-    def alpha(self, value, depth, alpha, beta):
-        if alpha is not float("-inf") and alpha > value:
-            alpha = value
-        return value, alpha, beta
+        li = []
+        for i in legal_moves:
+            tDepth, tVal, tA, tB = self.alphabeta(game.forecast_move(i), self.org_depth)
+            li.append(tDepth + tVal)
+            # print('ab', tA, tB)
+        if len(li) <= 0:
+            return (-1, -1)
+        num = max(li)
+        ind = li.index(num)
+        return legal_moves[ind]
 
-    # set and find beta
-    def beta(self, value, depth, alpha, beta):
-        if beta is not float("inf") and beta < value:
-            beta = value
-        return value, alpha, beta
+    def calAlphaBeta(self, d, val, alpha, beta):
+        if (d)%2 > 0:
+            return val, beta
+        else:
+            return alpha, val
 
     # alpah beta pruning
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         legal_moves = game.get_legal_moves()
-        curDepth = self.search_depth - depth
-        func = self.beta if depth%2 > 0 else self.alpha
-
+        curDepth = self.org_depth - depth
+        func = min if depth%2 > 0 else max
         if depth <= 0:
-            return curDepth, len(legal_moves), alpha, beta
+            a, b = self.calAlphaBeta(depth, len(legal_moves), alpha, beta)
+            return curDepth, len(legal_moves), a, b
         elif not isinstance(legal_moves, list) or len(legal_moves) <= 0:
             return curDepth, 0, alpha, beta
-        elif self.search_depth is depth:
-            depth -= 1
-            lMoves = list(legal_moves)
-            firstMove = lMoves.pop(0)
-            print('firstMove', firstMove, game.forecast_move(firstMove), depth, alpha, beta)
-            fDepth, fVal, fA, fB = self.alphabeta(game.forecast_move(firstMove), depth, alpha, beta)
-            print('test', fDepth, fVal, fA, fB)
-            print('pre for', lMoves)
-            for i in lMoves:
-                print('testttt', i)
-                iCd, iVal, iA, iB = self.alphabeta(game.forecast_move(i), depth, alpha, beta)
-            return depth, 1, alpha, beta
         else:
-            return depth, 1, alpha, beta
+            depth -= 1
+            tot = []
+            for i in legal_moves:
+                a, b = self.calAlphaBeta(depth, len(legal_moves), alpha, beta)
+                iDepth, iVal, iA, iB = self.alphabeta(game.forecast_move(i), depth, a, b)
+                tot.append(iVal)
+                # if iVal > b or iVal < a:
+                #     continue
+                # else:
+                break
+            # print('tmp', depth, iDepth, func(tot), iA, iB)
+            return depth, func(tot), iA, iB
