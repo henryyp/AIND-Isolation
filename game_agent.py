@@ -228,40 +228,63 @@ class AlphaBetaPlayer(IsolationPlayer):
         except SearchTimeout:
             pass  # Handle any actions required after timeout as needed
 
+    def isTerminal(self, moves, depth):
+        val = True if depth is 0 or len(moves) is 0 else False
+        return val
 
     # set and find alpha
-    def maxValue(self, value, depth, a, b):
-        if value > a:
-            a = value
-        return value, a, b
+    def maxValue(self, game, depth, alpha, beta):
+        legal_moves = game.get_legal_moves()
+        if self.isTerminal(legal_moves, depth):
+            return len(legal_moves), (self.search_depth - depth)
+
+        depth -= 1
+        bestVal = float("-inf")
+        for i in legal_moves:
+            iVal, iDepth = self.minValue(game.forecast_move(i), depth, alpha, beta)
+            bestVal = max(bestVal, iVal)
+            if bestVal >= beta:
+                return bestVal, iDepth
+            alpha = max(alpha, bestVal)
+        # print('maxValue: ', alpha, beta, bestVal)
+        return bestVal, depth
+
 
     # set and find beta
-    def minValue(self, value, depth, a, b):
-        if value < b:
-            b = value
-        return value, a, b
+    def minValue(self, game, depth, alpha, beta):
+        legal_moves = game.get_legal_moves()
+        if self.isTerminal(legal_moves, depth):
+            return len(legal_moves), (self.search_depth - depth)
+
+        depth -= 1
+        bestVal = float("inf")
+        for i in legal_moves:
+            iVal, iDepth = self.maxValue(game.forecast_move(i), depth, alpha, beta)
+            bestVal = min(bestVal, iVal)
+            if bestVal <= beta:
+                return bestVal, iDepth
+            beta = min(beta, bestVal)
+        # print('minValue: ', alpha, beta, bestVal)
+        return bestVal, depth
+
 
     # alpah beta pruning
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
-        legal_moves = game.get_legal_moves()
-        curDepth = self.search_depth - depth
-        func = self.beta if depth%2 > 0 else self.alpha
 
-        if depth <= 0:
-            return curDepth, len(legal_moves), alpha, beta
-        elif not isinstance(legal_moves, list) or len(legal_moves) <= 0:
-            return curDepth, 0, alpha, beta
-        elif self.search_depth is depth:
-            depth -= 1
-            lMoves = list(legal_moves)
-            firstMove = lMoves.pop(0)
-            print('firstMove', firstMove, game.forecast_move(firstMove), depth, alpha, beta)
-            fDepth, fVal, fA, fB = self.alphabeta(game.forecast_move(firstMove), depth, alpha, beta)
-            print('test', fDepth, fVal, fA, fB)
-            print('pre for', lMoves)
-            for i in lMoves:
-                print('testttt', i)
-                iCd, iVal, iA, iB = self.alphabeta(game.forecast_move(i), depth, alpha, beta)
-            return depth, 1, alpha, beta
-        else:
-            return depth, 1, alpha, beta
+        legal_moves = game.get_legal_moves()
+        bestVal = float("-inf")
+        bestDepth = 0
+        tot = []
+
+        for i in legal_moves:
+            iVal, iDepth = self.minValue(game, depth, bestVal, beta)
+            bestVal = iVal if iVal > bestVal else bestVal
+            tot.append(bestVal)
+
+        print(tot)
+
+        if len(tot) == 0:
+            return (-1, -1)
+
+        index = tot.index( max(tot) )
+        return legal_moves[index]

@@ -26,7 +26,7 @@ class IsolationTest(unittest.TestCase):
         self.player1 = "Player1"
         self.player2 = "Player2"
         self.game = Board(self.player1, self.player2)
-        self.agg = Aggregator()
+        # self.agg = Aggregator()
 
     def playGreedyMMGame(self, player1, player2, repeatNum=1, saveToES=False, randomisePos=True):
         i = 0
@@ -69,7 +69,7 @@ class IsolationTest(unittest.TestCase):
 if __name__ == "__main__":
     from isolation import Board
     # unittest.main()
-    playerAB = AlphaBetaPlayer()
+    playerAB = AlphaBetaPlayer(search_depth=10)
     playerMM = MinimaxPlayer(search_depth=5)
     playerR = RandomPlayer()
     playerG = GreedyPlayer()
