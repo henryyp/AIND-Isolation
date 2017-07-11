@@ -228,17 +228,18 @@ class AlphaBetaPlayer(IsolationPlayer):
         except SearchTimeout:
             pass  # Handle any actions required after timeout as needed
 
+
     # set and find alpha
-    def alpha(self, value, depth, alpha, beta):
-        if alpha is not float("-inf") and alpha > value:
-            alpha = value
-        return value, alpha, beta
+    def maxValue(self, value, depth, a, b):
+        if value > a:
+            a = value
+        return value, a, b
 
     # set and find beta
-    def beta(self, value, depth, alpha, beta):
-        if beta is not float("inf") and beta < value:
-            beta = value
-        return value, alpha, beta
+    def minValue(self, value, depth, a, b):
+        if value < b:
+            b = value
+        return value, a, b
 
     # alpah beta pruning
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
