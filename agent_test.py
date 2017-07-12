@@ -10,7 +10,7 @@ import random
 from importlib import reload
 from isolation import Board
 from board_analytics import Aggregator
-from game_agent import (MinimaxPlayer, AlphaBetaPlayer,
+from game_agent import (MinimaxPlayer, AlphaBetaPlayer, OrgMinimaxPlayer,
                         custom_score, custom_score_2, custom_score_3)
 from sample_players import (RandomPlayer, GreedyPlayer)
 
@@ -26,7 +26,7 @@ class IsolationTest(unittest.TestCase):
         self.player1 = "Player1"
         self.player2 = "Player2"
         self.game = Board(self.player1, self.player2)
-        # self.agg = Aggregator()
+        self.agg = Aggregator()
 
     def playGreedyMMGame(self, player1, player2, repeatNum=1, saveToES=False, randomisePos=True):
         i = 0
@@ -60,17 +60,28 @@ class IsolationTest(unittest.TestCase):
         playerG = GreedyPlayer()
 
 
+    def playTestScore(self):
+        playerAB = AlphaBetaPlayer()
+        playerMM = MinimaxPlayer()
+        playerR = RandomPlayer()
+        playerG = GreedyPlayer()
+        self.game(playerG, playerMM)
+
+        self.testScoreFunc(game, playerMM)
+
+    def testScoreFunc(self, game, testPlayer):
+        print(game.play())
 
 
-    # def runABGreedyStatsTest(self):
 
 
 
 if __name__ == "__main__":
     from isolation import Board
     # unittest.main()
-    playerAB = AlphaBetaPlayer(search_depth=10)
-    playerMM = MinimaxPlayer(search_depth=5)
+    playerAB = AlphaBetaPlayer(search_depth=7)
+    playerMM = MinimaxPlayer(search_depth=2)
+    playerOM = OrgMinimaxPlayer(search_depth=7)
     playerR = RandomPlayer()
     playerG = GreedyPlayer()
     test = IsolationTest()
@@ -78,4 +89,4 @@ if __name__ == "__main__":
     # test with save
     # test.playGreedyMMGame(player1=playerG, player2=playerFMM, saveToES=True, repeatNum=160)
     # test with LOGS
-    test.playGreedyMMGame(player1=playerG, player2=playerAB, saveToES=False, repeatNum=1)
+    # test.playGreedyMMGame(player1=playerR, player2=playerMM, saveToES=False, repeatNum=1)
