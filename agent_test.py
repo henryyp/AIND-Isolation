@@ -80,8 +80,8 @@ if __name__ == "__main__":
     from isolation import Board
     # unittest.main()
     playerAB = AlphaBetaPlayer(search_depth=7)
-    playerMM = MinimaxPlayer(search_depth=2)
-    playerOM = OrgMinimaxPlayer(search_depth=7)
+    playerMM = MinimaxPlayer(search_depth=5)
+    playerOM = OrgMinimaxPlayer(search_depth=3)
     playerR = RandomPlayer()
     playerG = GreedyPlayer()
     test = IsolationTest()
@@ -89,4 +89,4 @@ if __name__ == "__main__":
     # test with save
     # test.playGreedyMMGame(player1=playerG, player2=playerFMM, saveToES=True, repeatNum=160)
     # test with LOGS
-    # test.playGreedyMMGame(player1=playerR, player2=playerMM, saveToES=False, repeatNum=1)
+    test.playGreedyMMGame(player1=playerR, player2=playerMM, saveToES=True, repeatNum=100)
