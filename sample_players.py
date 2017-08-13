@@ -137,6 +137,13 @@ class RandomPlayer():
     """Player that chooses a move randomly."""
     def getClassName(self):
         return __class__.__name__
+    def __init__(self, search_depth=None, isIterative=False):
+        self.search_depth = None
+        self.start_depth = None
+
+    def isIterativeDeeping(self):
+        return False
+
     def get_move(self, game, time_left):
         """Randomly select a move from the available legal moves.
 
@@ -170,9 +177,13 @@ class GreedyPlayer():
     """
     def getClassName(self):
         return __class__.__name__
-    def __init__(self, score_fn=open_move_score):
+    def __init__(self, score_fn=open_move_score, search_depth=None, isIterative=False):
         self.score = score_fn
-        self.search_depth = 0
+        self.search_depth = None
+        self.start_depth = None
+
+    def isIterativeDeeping(self):
+        return False
 
     def get_move(self, game, time_left):
         """Select the move from the available legal moves with the highest
