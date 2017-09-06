@@ -105,7 +105,7 @@ class IsolationPlayer:
         self.TIMER_THRESHOLD = timeout
 
 # --------------------------------------------- #
-# MINIMAX PLAYER
+# SEEMS MORE OPTIMISED MINIMAX PLAYER
 # --------------------------------------------- #
 class MinimaxPlayer(IsolationPlayer):
 
@@ -146,101 +146,6 @@ class MinimaxPlayer(IsolationPlayer):
             depth -= 1
             return func( self.minimax(game.forecast_move(i), depth) for i in legal_moves )
 
-# --------------------------------------------- #
-# MINIMAX PLAYER
-# --------------------------------------------- #
-class OrgMinimaxPlayer(IsolationPlayer):
-    """Game-playing agent that chooses a move using depth-limited minimax
-    search. You must finish and test this player to make sure it properly uses
-    minimax to return a good move before the search time limit expires.
-    """
-    def get_move(self, game, time_left):
-        """Search for the best move from the available legal moves and return a
-        result before the time limit expires.
-
-        **************  YOU DO NOT NEED TO MODIFY THIS FUNCTION  *************
-
-        For fixed-depth search, this function simply wraps the call to the
-        minimax method, but this method provides a common interface for all
-        Isolation agents, and you will replace it in the AlphaBetaPlayer with
-        iterative deepening search.
-
-        Parameters
-        ----------
-        game : `isolation.Board`
-            An instance of `isolation.Board` encoding the current state of the
-            game (e.g., player locations and blocked cells).
-
-        time_left : callable
-            A function that returns the number of milliseconds left in the
-            current turn. Returning with any less than 0 ms remaining forfeits
-            the game.
-
-        Returns
-        -------
-        (int, int)
-            Board coordinates corresponding to a legal move; may return
-            (-1, -1) if there are no available legal moves.
-        """
-        self.time_left = time_left
-
-        # Initialize the best move so that this function returns something
-        # in case the search fails due to timeout
-        best_move = (-1, -1)
-
-        try:
-            # The try/except block will automatically catch the exception
-            # raised when the timer is about to expire.
-            return self.orgMinimax(game, self.search_depth)
-
-        except SearchTimeout:
-            pass  # Handle any actions required after timeout as needed
-
-        # Return the best move from the last completed search iteration
-        return best_move
-
-    def getClassName(self):
-        return __class__.__name__
-
-    def minValue(self, game, depth):
-        # TIMEOUT if no time left OR BEGINNING OF SEARCH
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-
-        legal_moves = game.get_legal_moves()
-        depth -= 1
-        curDepth = self.search_depth - depth
-
-        if len(legal_moves) == 0 or depth == 0:
-            return self.score(game, self)
-
-        return min( self.maxValue(game.forecast_move(i), depth) for i in legal_moves ) + curDepth
-
-    def maxValue(self, game, depth):
-        # TIMEOUT if no time left OR BEGINNING OF SEARCH
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-
-        legal_moves = game.get_legal_moves()
-        depth -= 1
-        curDepth = self.search_depth - depth
-
-        if len(legal_moves) == 0 or depth == 0:
-            return self.score(game, self)
-
-        return max( self.minValue(game.forecast_move(i), depth) for i in legal_moves ) + curDepth
-
-    # minimax method
-    def orgMinimax(self, game, depth):
-
-        legal_moves = game.get_legal_moves()
-        if len(legal_moves) == 0:
-            return (-1, -1)
-
-        tot = [ self.minValue(game.forecast_move(i), depth) for i in legal_moves ]
-        bestScore = max(tot)
-        # print('scores: ', bestScore, legal_moves[tot.index(bestScore)])
-        return legal_moves[tot.index(bestScore)]
 
 # --------------------------------------------- #
 # ALPHABETA CLASS
@@ -330,3 +235,73 @@ class AlphaBetaPlayer(IsolationPlayer):
             return (-1, -1)
 
         return legal_moves[tot.index( max(tot) )]
+
+
+# --------------------------------------------- #
+# ORIGINAL MINIMAX PLAYER
+# --------------------------------------------- #
+class OrgMinimaxPlayer(IsolationPlayer):
+    """Game-playing agent that chooses a move using depth-limited minimax
+    search. You must finish and test this player to make sure it properly uses
+    minimax to return a good move before the search time limit expires.
+    """
+    def get_move(self, game, time_left):
+        self.time_left = time_left
+
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            return self.orgMinimax(game, self.search_depth)
+
+        except SearchTimeout:
+            pass  # Handle any actions required after timeout as needed
+
+        # Return the best move from the last completed search iteration
+        return best_move
+
+    def getClassName(self):
+        return __class__.__name__
+
+    def minValue(self, game, depth):
+        # TIMEOUT if no time left OR BEGINNING OF SEARCH
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        legal_moves = game.get_legal_moves()
+        depth -= 1
+        curDepth = self.search_depth - depth
+
+        if len(legal_moves) == 0 or depth == 0:
+            return self.score(game, self)
+
+        return min( self.maxValue(game.forecast_move(i), depth) for i in legal_moves ) + curDepth
+
+    def maxValue(self, game, depth):
+        # TIMEOUT if no time left OR BEGINNING OF SEARCH
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        legal_moves = game.get_legal_moves()
+        depth -= 1
+        curDepth = self.search_depth - depth
+
+        if len(legal_moves) == 0 or depth == 0:
+            return self.score(game, self)
+
+        return max( self.minValue(game.forecast_move(i), depth) for i in legal_moves ) + curDepth
+
+    # minimax method
+    def orgMinimax(self, game, depth):
+
+        legal_moves = game.get_legal_moves()
+        if len(legal_moves) == 0:
+            return (-1, -1)
+
+        tot = [ self.minValue(game.forecast_move(i), depth) for i in legal_moves ]
+        bestScore = max(tot)
+        # print('scores: ', bestScore, legal_moves[tot.index(bestScore)])
+        return legal_moves[tot.index(bestScore)]
